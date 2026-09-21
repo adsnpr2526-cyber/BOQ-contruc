@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+[source: 1]<!DOCTYPE html>
 <html lang="th" class="h-full bg-slate-950 text-slate-100">
 <head>
   <meta charset="UTF-8">
@@ -785,7 +785,7 @@
     let apiKey = localStorage.getItem('gemini_api_key') || '';
     
     // ข้อมูล BOQ มาตรฐานทางวิศวกรรม (ภาษาไทย)
-    let boqData = [
+    let defaultBoqData = [
       // 1. งานโครงสร้าง
       { id: 1, category: "1. งานโครงสร้าง (Structural Work)", name: "คอนกรีตโครงสร้าง กำลังอัด 280 ksc (ทรงกระบอก)", qty: 45.0, unit: "คิว", wastage: 3, matCost: 2400, laborCost: 450 },
       { id: 2, category: "1. งานโครงสร้าง (Structural Work)", name: "เหล็กเสริมข้ออ้อย DB12 (มอก. 24-2559)", qty: 850.0, unit: "กก.", wastage: 5, matCost: 28, laborCost: 4.5 },
@@ -809,6 +809,8 @@
       { id: 14, category: "4. งานระบบไฟฟ้า (Electrical Work)", name: "สายไฟฟ้า THW 1x2.5 sq.mm. ร้อยท่อ EMT", qty: 350.0, unit: "เมตร", wastage: 5, matCost: 18, laborCost: 15 },
       { id: 15, category: "4. งานระบบไฟฟ้า (Electrical Work)", name: "ดวงโคม LED Panel 30x30cm 18W", qty: 24, unit: "ชุด", wastage: 0, matCost: 350, laborCost: 100 }
     ];
+
+    let boqData = JSON.parse(JSON.stringify(defaultBoqData));
 
     // สถานะ Canvas
     let canvas, ctx;
@@ -886,6 +888,7 @@
     /* ========================================== */
     function initCanvas() {
       canvas = document.getElementById('blueprint-canvas');
+      if (!canvas) return;
       ctx = canvas.getContext('2d');
 
       const container = document.getElementById('canvas-container');
@@ -973,7 +976,7 @@
         btn.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
       });
       const active = document.getElementById(`tool-${mode}`);
-      active.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/30');
+      if (active) active.classList.add('bg-amber-500/20', 'text-amber-400', 'border-amber-500/30');
       points = [];
       redrawCanvas();
     }
@@ -984,7 +987,7 @@
       referenceScaleRatio = 0;
       currentMeasuredLength = 0;
       currentMeasuredArea = 0;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
       document.getElementById('canvas-placeholder').classList.remove('hidden');
       document.getElementById('stat-scale').textContent = "ยังไม่ได้ตั้งค่า";
       document.getElementById('stat-length').textContent = "0.00 ม.";
@@ -1054,6 +1057,7 @@
     }
 
     function redrawCanvas() {
+      if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (canvasImg) {
@@ -1172,7 +1176,8 @@
     }
 
     function escapeHtml(text) {
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      if (!text) return '';
+      return text.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
     /* ========================================== */
@@ -1180,6 +1185,7 @@
     /* ========================================== */
     function calculateBBS() {
       const select = document.getElementById('bbs-rebar-type');
+      if (!select) return;
       const opt = select.options[select.selectedIndex];
       const weightPerMeter = parseFloat(opt.dataset.weight);
       const d = parseFloat(opt.dataset.d);
@@ -1371,6 +1377,7 @@
     /* ========================================== */
     function renderBoqTable() {
       const tbody = document.getElementById('boq-table-body');
+      if (!tbody) return;
       tbody.innerHTML = '';
 
       let currentCat = '';
@@ -1380,7 +1387,7 @@
       let grandTotalLabor = 0;
       let grandTotalDirect = 0;
 
-      boqData.forEach((item, idx) => {
+      boqData.forEach((item) => {
         if (item.category !== currentCat) {
           currentCat = item.category;
           const catRow = document.createElement('tr');
@@ -1414,19 +1421,19 @@
           </td>
           <td class="p-2.5 text-center text-slate-400">${escapeHtml(item.unit)}</td>
           <td class="p-2.5 text-right font-mono-code">
-            <input type="number" value="${item.wastage}" class="w-14 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'wastage', parseFloat(this.value))">%
+            <input type="number" value="${item.wastage}" class="w-14 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'wastage', parseFloat(this.value))">
           </td>
           <td class="p-2.5 text-right font-mono-code">
-            <input type="number" value="${item.matCost}" step="any" class="w-20 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'matCost', parseFloat(this.value))">
+            <input type="number" value="${item.matCost}" step="any" class="w-20 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'matCost', parseFloat(this.value))">
           </td>
-          <td class="p-2.5 text-right font-mono-code text-slate-300">฿${totalMat.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td class="p-2.5 text-right font-mono-code text-slate-300">฿${totalMat.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
           <td class="p-2.5 text-right font-mono-code">
-            <input type="number" value="${item.laborCost}" step="any" class="w-20 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'laborCost', parseFloat(this.value))">
+            <input type="number" value="${item.laborCost}" step="any" class="w-20 text-right bg-transparent focus:bg-slate-950 p-1 rounded text-slate-200 focus:outline-none focus:ring-1 focus:ring-amber-500" onchange="updateBoqItem(${item.id}, 'laborCost', parseFloat(this.value))">
           </td>
-          <td class="p-2.5 text-right font-mono-code text-slate-300">฿${totalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          <td class="p-2.5 text-right font-mono-code font-bold text-amber-400">฿${totalLine.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+          <td class="p-2.5 text-right font-mono-code text-slate-300">฿${totalLabor.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+          <td class="p-2.5 text-right font-mono-code font-semibold text-amber-400">฿${totalLine.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
           <td class="p-2.5 text-center no-print">
-            <button onclick="deleteBoqItem(${item.id})" class="text-rose-400 hover:text-rose-300 p-1">
+            <button onclick="deleteBoqItem(${item.id})" class="text-slate-500 hover:text-rose-400 transition px-1">
               <i class="fa-solid fa-trash-can"></i>
             </button>
           </td>
@@ -1434,25 +1441,28 @@
         tbody.appendChild(row);
       });
 
+      // ท้ายตาราง สรุปรวม
       const tfoot = document.getElementById('boq-table-foot');
-      tfoot.innerHTML = `
-        <tr class="text-xs">
-          <td colspan="6" class="p-3 text-right text-slate-300">รวมค่าวัสดุและค่าแรงต้นทุนทางตรง (Direct Cost):</td>
-          <td class="p-3 text-right font-mono-code text-slate-200">฿${grandTotalMat.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          <td class="p-3 text-right"></td>
-          <td class="p-3 text-right font-mono-code text-slate-200">฿${grandTotalLabor.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          <td class="p-3 text-right font-mono-code text-amber-400 text-sm font-bold">฿${grandTotalDirect.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          <td class="no-print"></td>
-        </tr>
-      `;
+      if (tfoot) {
+        tfoot.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-3 text-right font-bold text-slate-300">รวมรวมค่าวัสดุและค่าแรงงานต้นทุนทางตรง (Direct Cost):</td>
+            <td class="p-3 text-right font-mono-code text-emerald-400">฿${grandTotalMat.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td></td>
+            <td class="p-3 text-right font-mono-code text-cyan-400">฿${grandTotalLabor.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="p-3 text-right font-mono-code text-amber-400 font-extrabold text-sm">฿${grandTotalDirect.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td class="no-print"></td>
+          </tr>
+        `;
+      }
 
       calculateFactorF();
     }
 
-    function updateBoqItem(id, field, value) {
+    function updateBoqItem(id, key, val) {
       const item = boqData.find(i => i.id === id);
       if (item) {
-        item[field] = value;
+        item[key] = isNaN(val) ? val : parseFloat(val);
         renderBoqTable();
       }
     }
@@ -1460,6 +1470,13 @@
     function deleteBoqItem(id) {
       boqData = boqData.filter(i => i.id !== id);
       renderBoqTable();
+    }
+
+    function resetBoqToDefault() {
+      if (confirm("คุณต้องการรีเซ็ตตาราง BOQ กลับเป็นค่าเริ่มต้นใช่หรือไม่?")) {
+        boqData = JSON.parse(JSON.stringify(defaultBoqData));
+        renderBoqTable();
+      }
     }
 
     function openAddBoqModal() {
@@ -1471,30 +1488,36 @@
     }
 
     function saveNewBoqItem() {
-      const newItem = {
-        id: Date.now(),
-        category: document.getElementById('add-boq-category').value,
-        name: document.getElementById('add-boq-name').value || "รายการใหม่",
-        qty: parseFloat(document.getElementById('add-boq-qty').value) || 0,
-        unit: document.getElementById('add-boq-unit').value || "หน่วย",
-        wastage: parseFloat(document.getElementById('add-boq-wastage').value) || 0,
-        matCost: parseFloat(document.getElementById('add-boq-mat-cost').value) || 0,
-        laborCost: parseFloat(document.getElementById('add-boq-labor-cost').value) || 0
-      };
+      const cat = document.getElementById('add-boq-category').value;
+      const name = document.getElementById('add-boq-name').value.trim();
+      const qty = parseFloat(document.getElementById('add-boq-qty').value) || 0;
+      const unit = document.getElementById('add-boq-unit').value.trim() || 'หน่วย';
+      const wastage = parseFloat(document.getElementById('add-boq-wastage').value) || 0;
+      const matCost = parseFloat(document.getElementById('add-boq-mat-cost').value) || 0;
+      const laborCost = parseFloat(document.getElementById('add-boq-labor-cost').value) || 0;
 
-      boqData.push(newItem);
+      if (!name) {
+        alert("กรุณาระบุชื่อรายการวัสดุ/งาน");
+        return;
+      }
+
+      boqData.push({
+        id: Date.now(),
+        category: cat,
+        name: name,
+        qty: qty,
+        unit: unit,
+        wastage: wastage,
+        matCost: matCost,
+        laborCost: laborCost
+      });
+
       renderBoqTable();
       closeAddBoqModal();
     }
 
-    function resetBoqToDefault() {
-      if (confirm("คุณต้องการรีเซ็ตตาราง BOQ กลับเป็นค่าเริ่มต้นหรือไม่?")) {
-        location.reload();
-      }
-    }
-
     /* ========================================== */
-    /* คำนวณ FACTOR F & กราฟสัดส่วนงบประมาณ        */
+    /* FACTOR F & CHART SUMMARY                   */
     /* ========================================== */
     function calculateFactorF() {
       const advance = parseFloat(document.getElementById('ff-advance').value) || 0;
@@ -1502,47 +1525,44 @@
       const interest = parseFloat(document.getElementById('ff-interest').value) || 5;
       const vat = parseFloat(document.getElementById('ff-vat').value) || 7;
 
-      const baseOverhead = 1.1230 - (advance * 0.002);
-      const baseProfit = 1.0850 - (retention * 0.001) + ((interest - 5.0) * 0.005);
-      const vatMultiplier = 1 + (vat / 100);
+      // คำนวณตามมาตรฐานสูตรค่างาน กรมบัญชีกลาง (ประเมินเชิงตัวเลข)
+      const overheadFactor = 1.10 + (interest * 0.003) - (advance * 0.001);
+      const profitFactor = 1.05 + (retention * 0.002);
+      const vatFactor = 1 + (vat / 100);
 
-      const totalFactorF = (baseOverhead * baseProfit * vatMultiplier) / 1.07;
+      const totalFactorF = (overheadFactor * (profitFactor - 0.05)) * vatFactor;
 
-      document.getElementById('res-ff-overhead').textContent = baseOverhead.toFixed(4);
-      document.getElementById('res-ff-profit').textContent = baseProfit.toFixed(4);
+      document.getElementById('res-ff-overhead').textContent = overheadFactor.toFixed(4);
+      document.getElementById('res-ff-profit').textContent = profitFactor.toFixed(4);
       document.getElementById('res-ff-total').textContent = totalFactorF.toFixed(4);
+      document.getElementById('summary-factor-f-val').textContent = `x ${totalFactorF.toFixed(4)}`;
 
-      let grandTotalDirect = 0;
+      // สรุปยอดเงิน
+      let directCost = 0;
       boqData.forEach(item => {
-        const qty = item.qty * (1 + ((item.wastage || 0) / 100));
-        grandTotalDirect += qty * (item.matCost + item.laborCost);
+        const qtyWithWastage = item.qty * (1 + ((item.wastage || 0) / 100));
+        directCost += qtyWithWastage * (item.matCost + item.laborCost);
       });
 
-      const grandTotalProjectCost = grandTotalDirect * totalFactorF;
+      const grandTotal = directCost * totalFactorF;
 
-      document.getElementById('summary-direct-cost').textContent = `฿${grandTotalDirect.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      document.getElementById('summary-factor-f-val').textContent = `x ${totalFactorF.toFixed(4)}`;
-      document.getElementById('summary-grand-total').textContent = `฿${grandTotalProjectCost.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
-      if (!document.getElementById('view-factor-f').classList.contains('hidden')) {
-        renderBudgetChart();
-      }
+      document.getElementById('summary-direct-cost').textContent = `฿${directCost.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+      document.getElementById('summary-grand-total').textContent = `฿${grandTotal.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
     }
 
     function renderBudgetChart() {
-      const ctxChart = document.getElementById('budget-chart').getContext('2d');
+      const ctxChart = document.getElementById('budget-chart');
+      if (!ctxChart) return;
 
-      const categories = {};
+      const catTotals = {};
       boqData.forEach(item => {
-        const qty = item.qty * (1 + ((item.wastage || 0) / 100));
-        const lineTotal = qty * (item.matCost + item.laborCost);
-        
-        const shortName = item.category.split('.')[1]?.trim() || item.category;
-        categories[shortName] = (categories[shortName] || 0) + lineTotal;
+        const qtyWithWastage = item.qty * (1 + ((item.wastage || 0) / 100));
+        const totalLine = qtyWithWastage * (item.matCost + item.laborCost);
+        catTotals[item.category] = (catTotals[item.category] || 0) + totalLine;
       });
 
-      const labels = Object.keys(categories);
-      const dataValues = Object.values(categories);
+      const labels = Object.keys(catTotals);
+      const dataValues = Object.values(catTotals);
 
       if (budgetChartInstance) {
         budgetChartInstance.destroy();
@@ -1556,12 +1576,12 @@
             data: dataValues,
             backgroundColor: [
               '#eab308',
-              '#3b82f6',
+              '#06b6d4',
               '#10b981',
-              '#8b5cf6',
-              '#ec4899'
+              '#a855f7',
+              '#f43f5e'
             ],
-            borderWidth: 2,
+            borderWidth: 1,
             borderColor: '#0f172a'
           }]
         },
@@ -1572,8 +1592,8 @@
             legend: {
               position: 'bottom',
               labels: {
-                color: '#94a3b8',
-                font: { family: 'Sarabun', size: 11 }
+                color: '#cbd5e1',
+                font: { size: 11, family: 'Sarabun' }
               }
             }
           }
@@ -1582,23 +1602,24 @@
     }
 
     function exportBOQToCSV() {
-      let csvContent = "\uFEFF";
-      csvContent += "หมวดหมู่งาน,ชื่อรายการวัสดุ,ปริมาณ,หน่วย,% เผื่อเสีย,ค่าวัสดุ/หน่วย,รวมค่าวัสดุ,ค่าแรง/หน่วย,รวมค่าแรง,รวมเป็นเงิน\n";
+      let csvContent = "\uFEFF"; // UTF-8 BOM
+      csvContent += "ลำดับ,หมวดหมู่งาน,รายการวัสดุก่อสร้าง,ปริมาณ,หน่วย,%เผื่อเสีย,ราคาวัสดุ/หน่วย,รวมค่าวัสดุ,ค่าแรง/หน่วย,รวมค่าแรง,รวมเป็นเงิน\n";
 
+      let idx = 1;
       boqData.forEach(item => {
         const qtyWithWastage = item.qty * (1 + ((item.wastage || 0) / 100));
         const totalMat = qtyWithWastage * item.matCost;
         const totalLabor = qtyWithWastage * item.laborCost;
         const totalLine = totalMat + totalLabor;
 
-        csvContent += `"${item.category}","${item.name.replace(/"/g, '""')}",${item.qty},"${item.unit}",${item.wastage},${item.matCost},${totalMat.toFixed(2)},${item.laborCost},${totalLabor.toFixed(2)},${totalLine.toFixed(2)}\n`;
+        csvContent += `"${idx++}","${item.category}","${item.name}","${item.qty}","${item.unit}","${item.wastage}","${item.matCost}","${totalMat.toFixed(2)}","${item.laborCost}","${totalLabor.toFixed(2)}","${totalLine.toFixed(2)}"\n`;
       });
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `CivilBOQ_Export_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", `BOQ_CivilBOQ_Pro_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
