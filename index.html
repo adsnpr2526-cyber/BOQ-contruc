@@ -35,12 +35,17 @@
     <style>
         body { font-family: 'Prompt', sans-serif; background-color: #f8fafc; }
         .no-print { display: block; }
+        .print-only { display: none !important; }
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
-            body { background-color: white; }
-            .shadow-lg, .shadow-md, .shadow { box-shadow: none !important; }
-            .border { border-color: #e2e8f0 !important; }
+            body { background-color: white; color: black; }
+            .shadow-lg, .shadow-md, .shadow-sm, .shadow { box-shadow: none !important; }
+            .border { border-color: #cbd5e1 !important; }
+            .max-h-\[600px\] { max-height: none !important; overflow: visible !important; }
+            .overflow-y-auto, .overflow-x-auto { overflow: visible !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; }
         }
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -79,7 +84,7 @@
         <div class="flex flex-wrap border-b border-slate-200 mb-6 bg-white rounded-xl p-1.5 shadow-sm no-print">
             <button onclick="switchTab('tab-concrete')" id="btn-tab-concrete" class="tab-btn flex-1 min-w-[140px] py-2.5 px-4 text-center rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 bg-blue-600 text-white shadow">
                 <i class="fa-solid fa-cubes"></i>
-                <span>คอนกรีต / ปูน / งานก่อ-ฉาบ</span>
+                <span>หมวดงานอาคารทั่วไป</span>
             </button>
             <button onclick="switchTab('tab-steel')" id="btn-tab-steel" class="tab-btn flex-1 min-w-[140px] py-2.5 px-4 text-center rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center space-x-2 text-slate-600 hover:bg-slate-100">
                 <i class="fa-solid fa-bars-staggered"></i>
@@ -96,7 +101,7 @@
             </button>
         </div>
 
-        <!-- ==================== TAB 1: CONCRETE & MASONRY ==================== -->
+        <!-- ==================== TAB 1: CONCRETE & BUILDING WORKS ==================== -->
         <div id="tab-concrete" class="tab-content space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <!-- Input Panel -->
@@ -114,7 +119,11 @@
                             <option value="mortar">2. งานปูนก่อผนัง</option>
                             <option value="plaster">3. งานปูนฉาบผนัง</option>
                             <option value="tiles">4. งานปูกระเบื้องพื้น/ผนัง</option>
-                            <option value="formwork">5. งานไม้แบบและตะปู</option>
+                            <option value="roof">5. งานหลังคาและโครงหลังคา</option>
+                            <option value="ceiling">6. งานฝ้าเพดานและผนังเบา</option>
+                            <option value="paint">7. งานสีทาอาคาร</option>
+                            <option value="earthwork">8. งานดินถมและทรายรองพื้น</option>
+                            <option value="formwork">9. งานไม้แบบและตะปู</option>
                         </select>
                     </div>
 
@@ -164,7 +173,7 @@
                             <button onclick="applyVolHelper()" class="w-full bg-blue-600 text-white font-medium py-1.5 rounded hover:bg-blue-700">คำนวณใส่ปริมาตร</button>
                         </div>
 
-                        <!-- Area Direct (For Plaster / Tiles / Brickwork) -->
+                        <!-- Area Direct (For Plaster / Tiles / Brickwork / Paint / Roof / Ceiling) -->
                         <div id="input-group-area" class="hidden space-y-2">
                             <label class="block text-xs text-slate-600">พื้นที่ทำงาน (ตารางเมตร - ตร.ม.)</label>
                             <input type="number" id="input-area" value="10.00" min="0" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-blue-500">
@@ -416,7 +425,15 @@
         <!-- ==================== TAB 3: STEEL SPECIFICATION TABLE ==================== -->
         <div id="tab-steel-spec" class="tab-content hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 space-y-4">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4">
+                
+                <!-- Printable Steel Spec Header -->
+                <div class="hidden print-only text-center mb-6">
+                    <h1 class="text-2xl font-bold">ตารางพิกัดขนาดและน้ำหนักเหล็กมาตรฐาน (มอก. / Thai Standard)</h1>
+                    <p class="text-sm text-slate-600">เอกสารอ้างอิงคุณลักษณะและมาตรฐานเหล็กสำหรับงานก่อสร้าง</p>
+                    <div class="text-xs text-slate-400 mt-1" id="print-steel-date"></div>
+                </div>
+
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 no-print">
                     <div>
                         <h2 class="text-lg font-bold text-slate-800 flex items-center">
                             <i class="fa-solid fa-book-open text-blue-600 mr-2"></i>
@@ -425,10 +442,10 @@
                         <p class="text-xs text-slate-500">ข้อมูลอ้างอิงน้ำหนักต่อเมตร และน้ำหนักต่อท่อนมาตรฐานสำหรับประมาณราคา</p>
                     </div>
 
-                    <!-- Search / Filter -->
-                    <div class="flex items-center space-x-3">
-                        <input type="text" id="steel-table-search" placeholder="ค้นหา เช่น RB6, 2x2, H-Beam..." onkeyup="filterSteelSpecTable()" class="border border-slate-300 text-sm rounded-lg p-2.5 w-full md:w-64 focus:ring-blue-500">
-                        <select id="steel-table-filter" onchange="filterSteelSpecTable()" class="border border-slate-300 text-sm rounded-lg p-2.5 bg-slate-50 font-medium">
+                    <!-- Search / Filter & Print Button -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <input type="text" id="steel-table-search" placeholder="ค้นหา เช่น RB6, 2x2, H-Beam..." onkeyup="filterSteelSpecTable()" class="border border-slate-300 text-sm rounded-lg p-2.5 w-full sm:w-48 focus:ring-blue-500">
+                        <select id="steel-table-filter" onchange="filterSteelSpecTable()" class="border border-slate-300 text-sm rounded-lg p-2.5 bg-slate-50 font-medium text-xs sm:text-sm">
                             <option value="all">ทุกหมวดหมู่เหล็ก</option>
                             <option value="rb">เหล็กเส้นกลม (RB)</option>
                             <option value="db">เหล็กข้ออ้อย (DB)</option>
@@ -440,6 +457,10 @@
                             <option value="channel">เหล็กตัวซี</option>
                             <option value="hbeam">H-Beam / I-Beam / WF</option>
                         </select>
+                        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow transition flex items-center space-x-1.5">
+                            <i class="fa-solid fa-print"></i>
+                            <span>พิมพ์ตารางเหล็ก / ส่งออก PDF</span>
+                        </button>
                     </div>
                 </div>
 
@@ -558,7 +579,7 @@
         // 1. DATA DEFINITIONS (STANDARDS THAILAND)
         // ==========================================
 
-        // Concrete / Mortar / Masonry Mix Ratios (Per 1 Cu.m or Per Sq.m)
+        // Concrete / Mortar / Building Works Mix Ratios (Standard Standards)
         const MIX_DATA = {
             concrete: {
                 title: "งานคอนกรีต",
@@ -601,6 +622,44 @@
                 inputMode: "area_tile",
                 specs: [
                     { id: "t_adhesive", name: "ปูกระเบื้องด้วยปูนกาว + ยาแนว", adhesiveKg: 5.0, groutKg: 0.5, note: "ใช้ปูนกาวซีเมนต์ 5 กก./ตร.ม. และปูนยาแนว 0.5 กก./ตร.ม." }
+                ]
+            },
+            roof: {
+                title: "งานหลังคาและแปหลังคา",
+                unit: "ตร.ม.",
+                inputMode: "area",
+                specs: [
+                    { id: "r_cpac", name: "มุงกระเบื้องคอนกรีตซีแพคโมเนีย (CPAC)", tileQty: 10, battenMeters: 3.2, note: "กระเบื้องหลังคา ~10 แผ่น/ตร.ม., แปหลังคาสำเร็จรูป ~3.2 เมตร/ตร.ม." },
+                    { id: "r_corrugated", name: "มุงกระเบื้องลอนคู่ (ขนาด 0.50x1.20 ม.)", tileQty: 2.2, battenMeters: 1.2, note: "กระเบื้องลอนคู่ ~2.2 แผ่น/ตร.ม." },
+                    { id: "r_metalsheet", name: "มุงหลังคาเหล็กเมทัลชีท (Metal Sheet)", sheetArea: 1.0, battenMeters: 1.5, screwQty: 6, note: "เมทัลชีทคิดตามพื้นที่ 1 ตร.ม. สกรูยึดแป ~6 ตัว/ตร.ม." }
+                ]
+            },
+            ceiling: {
+                title: "งานฝ้าเพดานและผนังเบา",
+                unit: "ตร.ม.",
+                inputMode: "area",
+                specs: [
+                    { id: "c_gypsum_smooth", name: "ฝ้าเพดานยิปซัมบอร์ดฉาบเรียบ (หนา 9 มม.)", gypsumBoard: 0.36, cLineMeters: 2.2, mainLineMeters: 0.9, hangerSets: 1.1, note: "แผ่นยิปซัมขนาด 1.2x2.4ม. (2.88 ตร.ม./แผ่น), โครง C-Line ~2.2 ม./ตร.ม." },
+                    { id: "c_gypsum_tbar", name: "ฝ้าเพดานยิปซัมทีบาร์ T-Bar (60x60 ซม.)", gypsumTile: 2.8, mainTMeters: 0.9, crossTMeters: 1.8, note: "แผ่นฝ้าทีกริด 60x60 ซม. ประมาณ 2.8 แผ่น/ตร.ม." },
+                    { id: "c_drywall_2sides", name: "ผนังเบายิปซัมบอร์ด โครงกัลวาไนซ์ (โครง C/U-Stud) 2 ด้าน", gypsumBoard: 0.72, studMeters: 3.8, note: "ใช้แผ่นยิปซัม 2 ด้าน (~0.72 แผ่น/ตร.ม.), โครง Stud/Track ~3.8 ม./ตร.ม." }
+                ]
+            },
+            paint: {
+                title: "งานสีทาอาคาร (ทารองพื้น 1 เที่ยว + สีทับหน้า 2 เที่ยว)",
+                unit: "ตร.ม.",
+                inputMode: "area",
+                specs: [
+                    { id: "p_emulsion_ext", name: "งานทาสีน้ำอะคริลิกภายนอก", primerGallon: 0.03, topcoatGallon: 0.06, note: "สีรองพื้นปูนใหม่ 1 ถัง (3.785 ลิตร) ทาได้ ~30-35 ตร.ม., สีทับหน้า 2 เที่ยว ใช้ ~0.06 แกลลอน/ตร.ม." },
+                    { id: "p_emulsion_int", name: "งานทาสีน้ำอะคริลิกภายใน", primerGallon: 0.03, topcoatGallon: 0.06, note: "สีรองพื้นภายใน 1 เที่ยว + สีทับหน้าภายใน 2 เที่ยว" }
+                ]
+            },
+            earthwork: {
+                title: "งานดินถมและทรายรองพื้น",
+                unit: "ลบ.ม.",
+                inputMode: "volume",
+                specs: [
+                    { id: "e_sand_bed", name: "ทรายหยาบรองพื้นฐานราก/พื้นอาคาร (อัดแน่น)", sandCum: 1.25, note: "คิดเผื่อการบดอัดแน่นเพิ่ม 25% (ทราย 1 ลบ.ม. ยุบตัวเป็น ~1.25 ลบ.ม. หลวม)" },
+                    { id: "e_soil_fill", name: "ดินถมปรับระดับพื้นที่ (อัดแน่น)", soilCum: 1.30, note: "คิดเผื่อการบดอัดแน่นเพิ่ม 30%" }
                 ]
             },
             formwork: {
@@ -691,9 +750,11 @@
             updateSteelSubTypes();
             renderSteelSpecTable();
             
-            // Set Print Date
+            // Set Print Dates
             const d = new Date();
-            document.getElementById('print-date').innerText = "วันที่ออกเอกสาร: " + d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            const dateStr = "วันที่ออกเอกสาร: " + d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('print-date').innerText = dateStr;
+            document.getElementById('print-steel-date').innerText = dateStr;
         };
 
         // Tab Switching Logic
@@ -711,7 +772,7 @@
         }
 
         // ==========================================
-        // 2. CONCRETE / MORTAR LOGIC
+        // 2. CONCRETE / MORTAR / BUILDING WORKS LOGIC
         // ==========================================
 
         function updateConcSubCategory() {
@@ -841,6 +902,57 @@
                 items.push({ name: `แผ่นกระเบื้อง (ขนาด ${sizeVal} ซม.)`, net: tilePieces, wasteVal: tilePieces * (wastage/100), total: tilePieces * wasteFactor, unit: "แผ่น" });
                 items.push({ name: "ปูนกาวซีเมนต์ปูกระเบื้อง", net: spec.adhesiveKg * qty, wasteVal: (spec.adhesiveKg * qty)*(wastage/100), total: (spec.adhesiveKg * qty)*wasteFactor, unit: "กก." });
                 items.push({ name: "ปูนยาแนว", net: spec.groutKg * qty, wasteVal: (spec.groutKg * qty)*(wastage/100), total: (spec.groutKg * qty)*wasteFactor, unit: "กก." });
+            } else if (catKey === 'roof') {
+                if (spec.tileQty) {
+                    const tiles = spec.tileQty * qty;
+                    items.push({ name: spec.name, net: tiles, wasteVal: tiles * (wastage/100), total: tiles * wasteFactor, unit: "แผ่น" });
+                }
+                if (spec.sheetArea) {
+                    items.push({ name: "แผ่นหลังคาเหล็กเมทัลชีท", net: qty, wasteVal: qty * (wastage/100), total: qty * wasteFactor, unit: "ตร.ม." });
+                }
+                if (spec.battenMeters) {
+                    const battenM = spec.battenMeters * qty;
+                    items.push({ name: "แปหลังคาเหล็กสำเร็จรูป", net: battenM, wasteVal: battenM * (wastage/100), total: battenM * wasteFactor, unit: "เมตร" });
+                }
+                if (spec.screwQty) {
+                    const screws = spec.screwQty * qty;
+                    items.push({ name: "สกรูยึดหลังคา", net: screws, wasteVal: screws * (wastage/100), total: screws * wasteFactor, unit: "ตัว" });
+                }
+            } else if (catKey === 'ceiling') {
+                if (spec.gypsumBoard) {
+                    const boards = spec.gypsumBoard * qty;
+                    items.push({ name: "แผ่นยิปซัมบอร์ด (1.20 x 2.40 ม.)", net: boards, wasteVal: boards * (wastage/100), total: boards * wasteFactor, unit: "แผ่น" });
+                }
+                if (spec.gypsumTile) {
+                    const tiles = spec.gypsumTile * qty;
+                    items.push({ name: "แผ่นฝ้าทีกริด T-Bar (60x60 ซม.)", net: tiles, wasteVal: tiles * (wastage/100), total: tiles * wasteFactor, unit: "แผ่น" });
+                }
+                if (spec.cLineMeters) {
+                    const cLine = spec.cLineMeters * qty;
+                    items.push({ name: "โครงคร่าว C-Line", net: cLine, wasteVal: cLine * (wastage/100), total: cLine * wasteFactor, unit: "เมตร" });
+                }
+                if (spec.mainLineMeters) {
+                    const mainL = spec.mainLineMeters * qty;
+                    items.push({ name: "โครงคร่าวหลัก Main-Line", net: mainL, wasteVal: mainL * (wastage/100), total: mainL * wasteFactor, unit: "เมตร" });
+                }
+                if (spec.studMeters) {
+                    const stud = spec.studMeters * qty;
+                    items.push({ name: "โครงคร่าวผนังเบา C-Stud / U-Track", net: stud, wasteVal: stud * (wastage/100), total: stud * wasteFactor, unit: "เมตร" });
+                }
+            } else if (catKey === 'paint') {
+                const primer = spec.primerGallon * qty;
+                const topcoat = spec.topcoatGallon * qty;
+                items.push({ name: "สีรองพื้นปูน", net: primer, wasteVal: primer * (wastage/100), total: primer * wasteFactor, unit: "แกลลอน" });
+                items.push({ name: "สีทับหน้าทาอาคาร (2 เที่ยว)", net: topcoat, wasteVal: topcoat * (wastage/100), total: topcoat * wasteFactor, unit: "แกลลอน" });
+            } else if (catKey === 'earthwork') {
+                if (spec.sandCum) {
+                    const sand = spec.sandCum * qty;
+                    items.push({ name: "ทรายหยาบถมบดอัด", net: sand, wasteVal: sand * (wastage/100), total: sand * wasteFactor, unit: "ลบ.ม." });
+                }
+                if (spec.soilCum) {
+                    const soil = spec.soilCum * qty;
+                    items.push({ name: "ดินถมปรับระดับพื้นที่", net: soil, wasteVal: soil * (wastage/100), total: soil * wasteFactor, unit: "ลบ.ม." });
+                }
             } else if (catKey === 'formwork') {
                 items.push({ name: "ไม้แบบ (คิด 100% สุธน)", net: spec.timberCuft * qty, wasteVal: (spec.timberCuft * qty)*(wastage/100), total: (spec.timberCuft * qty)*wasteFactor, unit: "ลบ.ฟุต" });
                 items.push({ name: "ไม้โครง / ไม้คร่าว (30%)", net: spec.structureTimberCuft * qty, wasteVal: (spec.structureTimberCuft * qty)*(wastage/100), total: (spec.structureTimberCuft * qty)*wasteFactor, unit: "ลบ.ฟุต" });
@@ -1058,7 +1170,7 @@
 
             data.items.forEach(it => {
                 boqItems.push({
-                    category: "งานคอนกรีต/ปูน",
+                    category: "งานอาคารทั่วไป",
                     title: data.title,
                     materialName: it.name,
                     netQty: it.net,
@@ -1069,7 +1181,7 @@
             });
 
             updateBOQDisplay();
-            showToast("เพิ่มรายการงานคอนกรีตเข้า BOQ เรียบร้อย");
+            showToast("เพิ่มรายการงานอาคารเข้า BOQ เรียบร้อย");
         }
 
         function addSteelToBOQ() {
