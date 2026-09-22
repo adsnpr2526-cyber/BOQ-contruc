@@ -387,12 +387,12 @@
 
         <!-- SECTION 4: Engineering Calculation Tools -->
         <section id="calc-tab" class="tab-content hidden space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 
                 <!-- Tool 1: Bar Bending Schedule (BBS) -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
                     <h3 class="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
-                        <i class="fa-solid fa-cubes-stacked text-sky-600"></i> คำนวณน้ำหนักเหล็กเสริม (BBS Calculator)
+                        <i class="fa-solid fa-cubes-stacked text-sky-600"></i> คำนวณน้ำหนักเหล็กเส้นเสริม (BBS Calculator)
                     </h3>
                     <div class="space-y-3 text-xs">
                         <div class="grid grid-cols-2 gap-3">
@@ -433,7 +433,54 @@
                     </div>
                 </div>
 
-                <!-- Tool 2: Brick & Mortar Calculator -->
+                <!-- Tool 2: Steel Box Tube Calculator (เครื่องมือใหม่: คำนวณเหล็กกล่องทุกประเภท) -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
+                    <h3 class="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-vector-square text-indigo-600"></i> คำนวณน้ำหนักเหล็กกล่อง (Steel Tube)
+                    </h3>
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="block text-slate-600 mb-1">ประเภทเหล็กกล่อง:</label>
+                            <select id="steelBoxCategory" onchange="updateSteelBoxOptions()" class="w-full p-2 border border-slate-300 rounded-lg font-medium text-slate-700">
+                                <option value="square">เหล็กกล่องสี่เหลี่ยมจัตุรัส (Square Steel Tube)</option>
+                                <option value="rect">เหล็กกล่องสี่เหลี่ยมผืนผ้า/เหล็กแบน (Rectangular Tube)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-slate-600 mb-1">ขนาดมาตรฐาน (มม. x หนา):</label>
+                                <select id="steelBoxSpec" class="w-full p-2 border border-slate-300 rounded-lg">
+                                    <!-- Options generated dynamically -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">ความยาวต่อเส้น (เมตร):</label>
+                                <input type="number" id="steelBoxLength" value="6" step="0.1" class="w-full p-2 border border-slate-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-slate-600 mb-1">จำนวน (เส้น):</label>
+                                <input type="number" id="steelBoxCount" value="10" class="w-full p-2 border border-slate-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-slate-600 mb-1">เผื่อทาบ & ตัดรอยต่อ (%):</label>
+                                <input type="number" id="steelBoxWaste" value="5" class="w-full p-2 border border-slate-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <button onclick="calculateSteelBox()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg transition">คำนวณน้ำหนักเหล็กกล่อง</button>
+
+                        <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 text-indigo-900 space-y-1">
+                            <div class="flex justify-between"><span>น้ำหนักต่อเมตร:</span><span id="resSteelBoxUnitWeight" class="font-semibold text-indigo-800">0.00 กก./ม.</span></div>
+                            <div class="flex justify-between border-t border-indigo-100 pt-1 mt-1"><span>น้ำหนักเหล็กสุทธิ:</span><span id="resSteelBoxTotalWeight" class="text-base font-bold text-indigo-700">0.00 กก.</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool 3: Brick & Mortar Calculator -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 space-y-4">
                     <h3 class="font-semibold text-slate-800 text-sm border-b border-slate-100 pb-2 flex items-center gap-2">
                         <i class="fa-solid fa-border-all text-amber-600"></i> คำนวณงานก่ออิฐและปูนฉาบ
@@ -532,6 +579,69 @@
         ];
         let boqChartInstance = null;
 
+        /* Standard Steel Box Data Table (Weight per meter in kg/m according to TIS / Standard) */
+        const steelBoxDatabase = {
+            square: [
+                { name: '1/2"x1/2" (15x15x1.2 mm)', weight: 0.52 },
+                { name: '3/4"x3/4" (19x19x1.2 mm)', weight: 0.68 },
+                { name: '1"x1" (25x25x1.2 mm)', weight: 0.90 },
+                { name: '1"x1" (25x25x1.6 mm)', weight: 1.18 },
+                { name: '1"x1" (25x25x2.0 mm)', weight: 1.45 },
+                { name: '1-1/4"x1-1/4" (32x32x1.6 mm)', weight: 1.53 },
+                { name: '1-1/4"x1-1/4" (32x32x2.0 mm)', weight: 1.89 },
+                { name: '1-1/2"x1-1/2" (38x38x1.6 mm)', weight: 1.83 },
+                { name: '1-1/2"x1-1/2" (38x38x2.0 mm)', weight: 2.26 },
+                { name: '1-1/2"x1-1/2" (38x38x2.3 mm)', weight: 2.57 },
+                { name: '2"x2" (50x50x1.6 mm)', weight: 2.43 font: 'default'},
+                { name: '2"x2" (50x50x2.0 mm)', weight: 3.01 },
+                { name: '2"x2" (50x50x2.3 mm)', weight: 3.43 },
+                { name: '2"x2" (50x50x3.2 mm)', weight: 4.65 },
+                { name: '2-1/2"x2-1/2" (65x65x2.3 mm)', weight: 4.52 font: 'default'},
+                { name: '2-1/2"x2-1/2" (65x65x3.2 mm)', weight: 6.16 },
+                { name: '3"x3" (75x75x2.3 mm)', weight: 5.24 },
+                { name: '3"x3" (75x75x3.2 mm)', weight: 7.16 },
+                { name: '3"x3" (75x75x4.5 mm)', weight: 9.77 },
+                { name: '4"x4" (100x100x2.3 mm)', weight: 7.05 },
+                { name: '4"x4" (100x100x3.2 mm)', weight: 9.67 },
+                { name: '4"x4" (100x100x4.5 mm)', weight: 13.30 },
+                { name: '5"x5" (125x125x3.2 mm)', weight: 12.20 },
+                { name: '5"x5" (125x125x4.5 mm)', weight: 16.80 },
+                { name: '6"x6" (150x150x3.2 mm)', weight: 14.70 },
+                { name: '6"x6" (150x150x4.5 mm)', weight: 20.40 },
+                { name: '6"x6" (150x150x6.0 mm)', weight: 26.70 },
+                { name: '8"x8" (200x200x4.5 mm)', weight: 27.40 },
+                { name: '8"x8" (200x200x6.0 mm)', weight: 36.10 }
+            ],
+            rect: [
+                { name: '2"x1" (50x25x1.2 mm)', weight: 1.35 },
+                { name: '2"x1" (50x25x1.6 mm)', weight: 1.78 },
+                { name: '2"x1" (50x25x2.0 mm)', weight: 2.21 },
+                { name: '2"x1" (50x25x2.3 mm)', weight: 2.51 },
+                { name: '3"x1-1/2" (75x38x1.6 mm)', weight: 2.73 },
+                { name: '3"x1-1/2" (75x38x2.0 mm)', weight: 3.39 },
+                { name: '3"x1-1/2" (75x38x2.3 mm)', weight: 3.87 },
+                { name: '3"x1-1/2" (75x38x3.2 mm)', weight: 5.25 },
+                { name: '4"x2" (100x50x1.6 mm)', weight: 3.68 },
+                { name: '4"x2" (100x50x2.0 mm)', weight: 4.58 },
+                { name: '4"x2" (100x50x2.3 mm)', weight: 5.24 },
+                { name: '4"x2" (100x50x3.2 mm)', weight: 7.16 },
+                { name: '4"x2" (100x50x4.5 mm)', weight: 9.77 },
+                { name: '5"x2" (125x50x2.3 mm)', weight: 6.14 },
+                { name: '5"x2" (125x50x3.2 mm)', weight: 8.42 },
+                { name: '5"x2-1/2" (125x75x3.2 mm)', weight: 9.67 },
+                { name: '5"x2-1/2" (125x75x4.5 mm)', weight: 13.30 },
+                { name: '6"x2" (150x50x3.2 mm)', weight: 9.67 },
+                { name: '6"x2" (150x50x4.5 mm)', weight: 13.30 },
+                { name: '6"x3" (150x75x3.2 mm)', weight: 10.90 },
+                { name: '6"x3" (150x75x4.5 mm)', weight: 15.10 },
+                { name: '6"x4" (150x100x3.2 mm)', weight: 12.20 },
+                { name: '6"x4" (150x100x4.5 mm)', weight: 16.80 },
+                { name: '8"x4" (200x100x3.2 mm)', weight: 14.70 },
+                { name: '8"x4" (200x100x4.5 mm)', weight: 20.40 },
+                { name: '8"x4" (200x100x6.0 mm)', weight: 26.70 }
+            ]
+        };
+
         /* Initialization on Page Load */
         window.onload = function () {
             initApiKey();
@@ -539,6 +649,7 @@
             renderBOQTable();
             initChart();
             calculateFactorF();
+            updateSteelBoxOptions();
         };
 
         /* API Key Management */
@@ -766,7 +877,7 @@
         function setPromptPreset(type) {
             const promptBox = document.getElementById('aiPromptInput');
             if (type === 'struct') {
-                promptBox.value = "ถอดปริมาณงานโครงสร้างอาคาร ได้แก่ คอนกรีตโครงสร้าง (ลบ.ม.), ไม้แบบ (ตร.ม.), เหล็กเสริม DB/RB (กก.) พร้อมประเมินราคาวัสดุและค่าแรง";
+                promptBox.value = "ถอดปริมาณงานโครงสร้างอาคาร ได้แก่ คอนกรีตโครงสร้าง (ลบ.ม.), ไม้แบบ (ตร.ม.), เหล็กเสริม DB/RB และเหล็กกล่อง (กก.) พร้อมประเมินราคาวัสดุและค่าแรง";
             } else if (type === 'arch') {
                 promptBox.value = "ถอดปริมาณงานสถาปัตยกรรม ได้แก่ ผนังอิฐมวลเบา/อิฐมอญ (ตร.ม.), ปูนฉาบ 2 ด้าน, งานสี และงานกระเบื้องพื้น พร้อมราคากลาง";
             } else if (type === 'full') {
@@ -1038,6 +1149,34 @@
 
             const totalWeight = (length * count * weightPerM) * (1 + waste / 100);
             document.getElementById('bbsResultWeight').innerText = totalWeight.toFixed(2) + " กก.";
+        }
+
+        /* Steel Box Tube Calculator Logic */
+        function updateSteelBoxOptions() {
+            const category = document.getElementById('steelBoxCategory').value;
+            const selectSpec = document.getElementById('steelBoxSpec');
+            selectSpec.innerHTML = "";
+
+            const items = steelBoxDatabase[category] || [];
+            items.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item.weight;
+                opt.innerText = item.name;
+                selectSpec.appendChild(opt);
+            });
+            calculateSteelBox();
+        }
+
+        function calculateSteelBox() {
+            const unitWeight = parseFloat(document.getElementById('steelBoxSpec').value) || 0;
+            const length = parseFloat(document.getElementById('steelBoxLength').value) || 0;
+            const count = parseFloat(document.getElementById('steelBoxCount').value) || 0;
+            const waste = parseFloat(document.getElementById('steelBoxWaste').value) || 0;
+
+            const totalWeight = (length * count * unitWeight) * (1 + waste / 100);
+
+            document.getElementById('resSteelBoxUnitWeight').innerText = unitWeight.toFixed(2) + " กก./ม.";
+            document.getElementById('resSteelBoxTotalWeight').innerText = totalWeight.toFixed(2) + " กก.";
         }
 
         function calculateBrickPlaster() {
